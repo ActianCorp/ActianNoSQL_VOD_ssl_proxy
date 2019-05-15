@@ -289,8 +289,6 @@ setup_variables()
       then
         DAEMONMODE=$VARVALUE
     fi
-   
-  prepare_client
 
 }
 
@@ -368,6 +366,9 @@ test_print()
    
      echo "$PRSTR This machine will be setup as one remote stunnel client --"
      read_file ${AUX}/client_config.txt 
+     # Need to get sure the cariables defined on the previous functions are passed to the next functions
+
+     prepare_client
  fi 
 
  print_info "$PRSTR END ==================================================="
