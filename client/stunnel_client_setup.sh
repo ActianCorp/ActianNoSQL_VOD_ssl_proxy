@@ -246,6 +246,9 @@ start_stunnel_daemon()
 
 prepare_client()
 {
+  local STR=" -- prepare_client - "
+  echo "$STR TMP_HOSTS_ALLOW = $TMP_HOSTS_ALLOW ; CLN_CFG_FILE = $CLN_CFG_FILE -"
+  return  10;
   set_hosts_allow $TMP_HOSTS_ALLOW
   set_services $TMP_SERVICES
   set_iptable_rule $TMP_IPTABLE_CLN_RULE_FILE
@@ -254,15 +257,15 @@ prepare_client()
    then
 	start_stunnel_daemon $CLN_CFG_FILE
    else
-	echo "$PRSTR starting stunnel by xinetd wasn't implemented! --"
+	echo "$STR starting stunnel by xinetd wasn't implemented! --"
   fi
 }
 
 setup_variables()
 {
+  local STR=" -- setup_variables - "
   VARNAME=$1
   VARVALUE=$2
-  local STR=" -- setup_variables - "
 
      if [ "$VARNAME" == "VERSANT_SERVICE_NAME" ]
       then
@@ -273,12 +276,15 @@ setup_variables()
      elif [ "$VARNAME" == "TMP_SERVICES" ]
       then
         TMP_SERVICES=$VARVALUE
+	#set_services $TMP_SERVICES
      elif [ "$VARNAME" == "TMP_IPTABLE_CLN_RULE_FILE" ]
       then
         TMP_IPTABLE_CLN_RULE_FILE=$VARVALUE
+	#set_iptable_rule $TMP_IPTABLE_CLN_RULE_FILE
      elif [ "$VARNAME" == "TMP_HOSTS_ALLOW" ]
       then
         TMP_HOSTS_ALLOW=$VARVALUE
+  	#set_hosts_allow $TMP_HOSTS_ALLOW
      elif [ "$VARNAME" == "CLN_CFG_FILE" ]
       then
         CLN_CFG_FILE=$VARVALUE
@@ -289,7 +295,8 @@ setup_variables()
       then
         DAEMONMODE=$VARVALUE
     fi
-
+  print_info "$STR $VARNAME=$VARVALUE -"
+  print_info "$STR ------------------------------"
 }
 
 read_file()
@@ -309,10 +316,15 @@ read_file()
     # LINE looks like: "<parameter> = <value>"
      local NAME=`echo $LINE | awk '{print $1}'`;
      local VALUE=`echo $LINE | awk '{print $3}'`;
+
     # setup the global variables according
-     print_info "$STR setup_variables $VARNAME $VARVALUE --"
-     setup_variables $NAME $VALUE
+    if [ ! -z  $NAME ]
+     then
+	print_info "$STR setup_variables $NAME $ALUE --"
+	setup_variables $NAME $VALUE
+    fi
    done
+   print_info "$STR CERTNAME=$CERTNAME -"
 }
 
 test_print()
@@ -329,6 +341,8 @@ test_print()
   INFOLEVEL=1
   # Info level = 0 -> few debug information is printed
   # Info level != 0 -> more debug information is printed
+
+  export DAEMONMODE CERTNAME CLN_CFG_FILE TMP_HOSTS_ALLOW TMP_IPTABLE_CLN_RULE_FILE TMP_SERVICES STUNNELDIR VERSANT_SERVICE_NAME
 
   PRSTR="  == main - "
 
@@ -366,9 +380,10 @@ test_print()
    
      echo "$PRSTR This machine will be setup as one remote stunnel client --"
      read_file ${AUX}/client_config.txt 
-     # Need to get sure the cariables defined on the previous functions are passed to the next functions
 
-     prepare_client
+     # Need to get sure the cariables defined on the previous functions are passed to the next functions
+     print_info "$PRSTR CERTNAME=$CERTNAME -"
+     # prepare_client
  fi 
 
  print_info "$PRSTR END ==================================================="
