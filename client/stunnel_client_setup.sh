@@ -188,7 +188,27 @@ add_entries()
   cat $TMPFILE |
    while read LINE
     do
-     echo $LINE |sudo tee -a $TARGETFILE
+	# verify is the service definition already exist before insert it
+      local SERVICE=`echo $LINE | awk '{ print $1 }'`;
+      if [ ! -z $SERVICE ]
+       then
+	MATCH1=`grep $SERVICE $TARGETFILE`;
+	if [ -z $MATCH1 ]
+	 then
+	 # The next is valid only for the tmp_services and /etc/services files
+	  if [ "$TARGETFILE" == "/etc/services" ]
+	  then
+	   local PORT_TCP=`echo $LINE | grep tcp | awk '{ print $2 }' `;
+           MATCH2=`grep " $PORT_TCP" $TARGETFILE`;
+	   if [ -z $MATCH2 ]
+	   then
+	     echo $LINE |sudo tee -a $TARGETFILE
+	   fi 
+	  else
+	   echo $LINE |sudo tee -a $TARGETFILE
+	  fi
+	fi
+      fi
     done
   print_info "$STR end -------------------------------------------------|"
 }
@@ -219,8 +239,9 @@ set_services()
 
     # Now that we have a temporary file, add these entries 
     # to the /etc/services file of the server host
-    # Notice that the osc* service is already defined 
-    # and active on the server host
+    # verify if the osc* service is already defined 
+    #  on the client host
+
     add_entries $MTMP_SERVICES $SERVICES_FILE
 
   print_info "$STR end -------------------------------------------------|"
@@ -264,9 +285,22 @@ prepare_client()
 setup_variables()
 {
   local STR=" -- setup_variables - "
-  VARNAME=$1
-  VARVALUE=$2
+  local VARNAME=$1
+  local VARVALUE=$2
 
+
+#    if [ ! -z  $NAME ]
+#     then
+#		 setup_variables $NAME $VALUE
+#	for ITEM in $VARLIST
+#	 do
+#	   if [ "$NAME" == "$ITEM" ]
+#	    then
+#		print_info "PRSTR ITEM -> $NAME=$ALUE --"
+#		$NAME=$VALUE
+#	    fi
+#	 done
+#    fi
      if [ "$VARNAME" == "VERSANT_SERVICE_NAME" ]
       then
         VERSANT_SERVICE_NAME=$VARVALUE
@@ -276,7 +310,6 @@ setup_variables()
      elif [ "$VARNAME" == "TMP_SERVICES" ]
       then
         TMP_SERVICES=$VARVALUE
-	#set_services $TMP_SERVICES
      elif [ "$VARNAME" == "TMP_IPTABLE_CLN_RULE_FILE" ]
       then
         TMP_IPTABLE_CLN_RULE_FILE=$VARVALUE
@@ -342,8 +375,6 @@ test_print()
   # Info level = 0 -> few debug information is printed
   # Info level != 0 -> more debug information is printed
 
-  export DAEMONMODE CERTNAME CLN_CFG_FILE TMP_HOSTS_ALLOW TMP_IPTABLE_CLN_RULE_FILE TMP_SERVICES STUNNELDIR VERSANT_SERVICE_NAME
-
   PRSTR="  == main - "
 
   if [ "$#" != "1" ]
@@ -373,18 +404,41 @@ test_print()
  fi
 
  if [ ! -e $AUX/client_config.txt ]
-   then
+ then
 	echo "$PRSTR  The client_config.txt file does not exit! Exiting now! =="  
 	exit 1002
-   else 
+ else 
    
-     echo "$PRSTR This machine will be setup as one remote stunnel client --"
-     read_file ${AUX}/client_config.txt 
+  echo "$PRSTR This machine will be setup as one remote stunnel client --"
+  FILE=${AUX}/client_config.txt 
 
-     # Need to get sure the cariables defined on the previous functions are passed to the next functions
+	     VALUE=` grep VERSANT_SERVICE_NAME $FILE | awk '{ print $3 }'`;
+	        VERSANT_SERVICE_NAME=$VALUE
+	     VALUE=` grep STUNNELDIR $FILE | awk '{ print $3 }'`;
+	        STUNNELDIR=$VALUE
+	     VALUE=` grep TMP_SERVICES $FILE | awk '{ print $3 }'`;
+	        TMP_SERVICES="$VALUE"
+	     VALUE=` grep TMP_IPTABLE_CLN_RULE_FILE $FILE | awk '{ print $3 }'`;
+		TMP_IPTABLE_CLN_RULE_FILE=$VALUE
+	     VALUE=` grep TMP_HOSTS_ALLOW $FILE | awk '{ print $3 }'`;
+	        TMP_HOSTS_ALLOW=$VALUE
+	     VALUE=` grep CLN_CFG_FILE $FILE | awk '{ print $3 }'`;
+	        CLN_CFG_FILE=$VALUE
+	     VALUE=` grep CERTNAME $FILE | awk '{ print $3 }'`;
+	        CERTNAME="$VALUE"
+	     VALUE=` grep DAEMONMODE $FILE | awk '{ print $3 }'`;
+	        DAEMONMODE=$VALUE
+
+
+     if [ ! -z $TMP_SERVICES ]
+      then
+	set_services $TMP_SERVICES
+      fi
+
+
      print_info "$PRSTR CERTNAME=$CERTNAME -"
-     # prepare_client
- fi 
+     print_info "$PRSTR TMP_SERVICES=$TMP_SERVICES -"
+ fi  # end_else [ ! -e $AUX/client_config.txt ]
 
  print_info "$PRSTR END ==================================================="
 
