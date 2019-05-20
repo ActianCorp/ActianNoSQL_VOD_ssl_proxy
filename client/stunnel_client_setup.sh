@@ -193,23 +193,28 @@ add_entries()
       if [ ! -z $SERVICE ]
        then
 	MATCH1=`grep $SERVICE $TARGETFILE`;
-	if [ -z $MATCH1 ]
+	if [ "$MATCH1" == "" ]
 	 then
 	 # The next is valid only for the tmp_services and /etc/services files
 	  if [ "$TARGETFILE" == "/etc/services" ]
 	  then
-	   local PORT_TCP=`echo $LINE | grep tcp | awk '{ print $2 }' `;
+	   local PORT_TCP=`echo $LINE | awk '{ print $2 }' `;
            MATCH2=`grep " $PORT_TCP" $TARGETFILE`;
-	   if [ -z $MATCH2 ]
+	   if [ "$MATCH2" == "" ]
 	   then
+	     echo "$STR echo $LINE |sudo tee -a $TARGETFILE -"
 	     echo $LINE |sudo tee -a $TARGETFILE
-	   fi 
+	   fi # end [ -z $MATCH2 ]
+
 	  else
+	   echo "$STR echo $LINE |sudo tee -a $TARGETFILE -"
 	   echo $LINE |sudo tee -a $TARGETFILE
-	  fi
-	fi
-      fi
+	  fi # end [ "$TARGETFILE" == "/etc/services" ]
+
+	fi # end [ -z $MATCH1 ]
+      fi # end  [ ! -z $SERVICE ]
     done
+
   print_info "$STR end -------------------------------------------------|"
 }
 
@@ -220,16 +225,6 @@ set_hosts_allow()
     # Now that we have a temporary file, add these entries to
     # the /etc/hosts.allow file
     add_entries $MTMP_HOSTS_ALLOW $HOSTS_ALLOW_FILE
-}
-
-set_iptable_rule()
-{
-  local STR=" -- set_iptable_rule - "
-
-  local MTMP_IPTABLE_CLN_RULE_FILE=$1
-  local RULE=`cat $MTMP_IPTABLE_CLN_RULE_FILE`;
-   sudo  $RULE
-  print_info "$STR end -------------------------------------------------|"
 }
 
 set_services()
@@ -244,6 +239,16 @@ set_services()
 
     add_entries $MTMP_SERVICES $SERVICES_FILE
 
+  print_info "$STR end -------------------------------------------------|"
+}
+
+set_iptable_rule()
+{
+  local STR=" -- set_iptable_rule - "
+
+  local MTMP_IPTABLE_CLN_RULE_FILE=$1
+  local RULE=`cat $MTMP_IPTABLE_CLN_RULE_FILE`;
+   sudo  $RULE
   print_info "$STR end -------------------------------------------------|"
 }
 
@@ -265,14 +270,26 @@ start_stunnel_daemon()
    print_info "$STR end -------------------------------------------------|"
 }
 
+function_setup()
+{
+  local MFUNCTION=$1
+  local MFILE=$2
+
+     if [ ! -z $MFILE ]
+      then
+	echo "$MFUNCTION $MFILE"
+	$MFUNCTION $AUX/$MFILE
+      else
+        echo " The $FUNCTION  could not br setup because the $MFILE is empty!"
+        exit 2;
+     fi
+}
+
 prepare_client()
 {
   local STR=" -- prepare_client - "
-  echo "$STR TMP_HOSTS_ALLOW = $TMP_HOSTS_ALLOW ; CLN_CFG_FILE = $CLN_CFG_FILE -"
+  echo "$STR DAEMONMODE = $DAEMONMODE ;  CLN_CFG_FILE = $CLN_CFG_FILE -"
   return  10;
-  set_hosts_allow $TMP_HOSTS_ALLOW
-  set_services $TMP_SERVICES
-  set_iptable_rule $TMP_IPTABLE_CLN_RULE_FILE
 
   if [ "$DAEMONMODE" != "0" ]
    then
@@ -282,92 +299,6 @@ prepare_client()
   fi
 }
 
-setup_variables()
-{
-  local STR=" -- setup_variables - "
-  local VARNAME=$1
-  local VARVALUE=$2
-
-
-#    if [ ! -z  $NAME ]
-#     then
-#		 setup_variables $NAME $VALUE
-#	for ITEM in $VARLIST
-#	 do
-#	   if [ "$NAME" == "$ITEM" ]
-#	    then
-#		print_info "PRSTR ITEM -> $NAME=$ALUE --"
-#		$NAME=$VALUE
-#	    fi
-#	 done
-#    fi
-     if [ "$VARNAME" == "VERSANT_SERVICE_NAME" ]
-      then
-        VERSANT_SERVICE_NAME=$VARVALUE
-     elif [ "$VARNAME" == "STUNNELDIR" ]
-      then
-        STUNNELDIR=$VARVALUE
-     elif [ "$VARNAME" == "TMP_SERVICES" ]
-      then
-        TMP_SERVICES=$VARVALUE
-     elif [ "$VARNAME" == "TMP_IPTABLE_CLN_RULE_FILE" ]
-      then
-        TMP_IPTABLE_CLN_RULE_FILE=$VARVALUE
-	#set_iptable_rule $TMP_IPTABLE_CLN_RULE_FILE
-     elif [ "$VARNAME" == "TMP_HOSTS_ALLOW" ]
-      then
-        TMP_HOSTS_ALLOW=$VARVALUE
-  	#set_hosts_allow $TMP_HOSTS_ALLOW
-     elif [ "$VARNAME" == "CLN_CFG_FILE" ]
-      then
-        CLN_CFG_FILE=$VARVALUE
-     elif [ "$VARNAME" == "CERTNAME" ]
-      then
-        CERTNAME=$VARVALUE
-     elif [ "$VARNAME" == "DAEMONMODE" ]
-      then
-        DAEMONMODE=$VARVALUE
-    fi
-  print_info "$STR $VARNAME=$VARVALUE -"
-  print_info "$STR ------------------------------"
-}
-
-read_file()
-{
-  local STR=" -- read_file - "
-  local FILE=$1
-
-  if [ ! -e $FILE ]
-   then
-        echo " [$FILE] does not exit! Exit now!"
-        exit 1
-  fi
-
-  cat $FILE |\
-   while read LINE
-   do
-    # LINE looks like: "<parameter> = <value>"
-     local NAME=`echo $LINE | awk '{print $1}'`;
-     local VALUE=`echo $LINE | awk '{print $3}'`;
-
-    # setup the global variables according
-    if [ ! -z  $NAME ]
-     then
-	print_info "$STR setup_variables $NAME $ALUE --"
-	setup_variables $NAME $VALUE
-    fi
-   done
-   print_info "$STR CERTNAME=$CERTNAME -"
-}
-
-test_print()
-{
-#  local LIST="DAEMONMODE CERTNAME CLN_CFG_FILE TMP_HOSTS_ALLOW TMP_IPTABLE_CLN_RULE_FILE TMP_SERVICES STUNNELDIR VERSANT_SERVICE_NAME"
- # for VAR in $LIST
- # do
-   echo " --test_print - TMP_SERVICES = $TMP_SERVICES  "
- # done
-}
 ###### main procedure ######
 
 
@@ -383,7 +314,6 @@ test_print()
      echo "$PRSTR  Exiting now! =="
      exit 1
   fi
-
 
  TARFILE=$1
 
@@ -429,15 +359,14 @@ test_print()
 	     VALUE=` grep DAEMONMODE $FILE | awk '{ print $3 }'`;
 	        DAEMONMODE=$VALUE
 
+	function_setup set_services $AUX/$TMP_SERVICES
 
-     if [ ! -z $TMP_SERVICES ]
-      then
-	set_services $TMP_SERVICES
-      fi
+	function_setup set_hosts_allow $AUX/$TMP_HOSTS_ALLOW
 
+	function_setup set_iptable_rule $AUX/$TMP_IPTABLE_CLN_RULE_FILE
 
-     print_info "$PRSTR CERTNAME=$CERTNAME -"
-     print_info "$PRSTR TMP_SERVICES=$TMP_SERVICES -"
+#	prepare_client 
+
  fi  # end_else [ ! -e $AUX/client_config.txt ]
 
  print_info "$PRSTR END ==================================================="
