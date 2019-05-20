@@ -278,7 +278,7 @@ function_setup()
      if [ ! -z $MFILE ]
       then
 	echo "$MFUNCTION $MFILE"
-	$MFUNCTION $AUX/$MFILE
+	$MFUNCTION $MFILE
       else
         echo " The $FUNCTION  could not br setup because the $MFILE is empty!"
         exit 2;
