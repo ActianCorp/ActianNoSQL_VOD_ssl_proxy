@@ -337,7 +337,31 @@ add_entries()
   cat $TMPFILE |
    while read LINE
     do
-     echo $LINE |sudo tee -a $TARGETFILE
+        # verify if the service definition already exists before insert it
+      local SERVICE=`echo $LINE | awk '{ print $1 }'`;
+      if [ ! -z $SERVICE ]
+       then
+        MATCH1=`grep $SERVICE $TARGETFILE`;
+        if [ "$MATCH1" == "" ]
+         then
+         # The next is valid only for the tmp_services and /etc/services files
+          if [ "$TARGETFILE" == "/etc/services" ]
+          then
+           local PORT_TCP=`echo $LINE | awk '{ print $2 }' `;
+           MATCH2=`grep " $PORT_TCP" $TARGETFILE`;
+           if [ "$MATCH2" == "" ]
+           then
+             echo "$STR echo $LINE |sudo tee -a $TARGETFILE -"
+             echo $LINE |sudo tee -a $TARGETFILE
+           fi # end [ -z $MATCH2 ]
+
+          else
+           echo "$STR echo $LINE |sudo tee -a $TARGETFILE -"
+           echo $LINE |sudo tee -a $TARGETFILE
+          fi # end [ "$TARGETFILE" == "/etc/services" ]
+
+        fi # end [ -z $MATCH1 ]
+      fi # end  [ ! -z $SERVICE ]
     done
   print_info "$STR end -------------------------------------------------|"
 }

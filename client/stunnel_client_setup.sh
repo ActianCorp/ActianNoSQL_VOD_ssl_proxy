@@ -2,7 +2,7 @@
 
 ##################################################################### 
 #
-# initial version: Apr 2019 - Alberico Perrella Neto
+# initial version: May 2019 - Alberico Perrella Neto
 #####################################################################
 
 #  NOTE: this script can be used ONLY on VOD-9.0 versions 
@@ -23,44 +23,6 @@ print_info()
    then
      echo $INFO
   fi
-}
-
-stopIF_hostname_null()
-{
-  local STR=" -- stopIF_hostname_null - "
-  local THIS_HOST=$1
-  if [ -z $THIS_HOST ]
-   then
-     echo "$STR Could not get this hostname ($THIS_HOST)! Exiting now ... --"
-     exit 1001
-  fi
-  local LOCAL_HOST=$THIS_HOST
-  # verify if the hostnae is a full qualified name
-  # in case it is not a full qualified name, then set it up
-  local DOTS=`echo $THIS_HOST | grep -o '\.' | wc -l`;
-  local NFIELD=`expr $DOTS + 1`;
-  local LASTFIELD=`echo $THIS_HOST | cut -d. -f $NFIELD`;
-  print_info "$STR Last domain field = [$LASTFIELD]   --"
-  if [ "$LASTFIELD" != "com" ] && [ "$LASTFIELD" !=  "org" ] && [ "$LASTFIELD" != "net" ] && [ "$LASTFIELD" != "int" ] && [ "$LASTFIELD" != "edu" ] && [ "$LASTFIELD" != "gov" ] && [ "$LASTFIELD" != "mil" ]
-   then
-     print_info "$STR This hostname = $THIS_HOST - Last Field =[$LASTFIELD]--"
-     local ANSWER="no"
-     while [ "${ANSWER:0:1}" != "y" ] 
-      do
-	echo -n "$STR Please enter the domain name of this network (example: versant.com): "  
-	read DOMAIN
-	echo -n "$STR Is this domain correct? (yes|no):"
-	read ANSWER
-        if [ "${ANSWER:0:1}" == "Y" ]
-          then
-                ANSWER="yes"
-        fi
-      done
-      LOCAL_HOST=$THIS_HOST.${DOMAIN}
-  fi
-  echo "$STR Full Qualified hostname= $LOCAL_HOST --"
-  SSL_SERVER_HOST=$LOCAL_HOST
-  print_info "$STR end -------------------------------------------------|"
 }
 
 check_socket()
@@ -148,37 +110,6 @@ verify_client_port()
   print_info "$STR end -------------------------------------------------|"
 }
 
-get_ssl_service_def()
-{
-  local STR=" -- get_ssl_service_def - "
-  if [ $# != 2 ]
-    then
-	echo "$STR passed the wong number of parameters --"
-	echo "$STR Parameters: sslPort target --"
-	echo "$STR target SHOULD BE server or anyrhing else (= client) --"
-	echo "$STR Exiting --"
-	exit 1004
-  fi
-  
-  SSLPORT=$1
-  THISHOST=$2
-
-  echo "$STR ServicePort = $SSLPORT - Target = $THISHOST --"
-
-  # I need to setup the name of the SSL_service before start to verify
-  # if its name and port numbers are available   
-
-	SERVICENAME="ssl_srv_${THISHOST}"
-	echo "$STR (server) ServiceName = $SERVICENAME --"
-	search_ssl $SERVICENAME $SSLPORT;
-
- # This should be veriufied later on the client machines
-	CLIENTNAME="ssl_cln_${THISHOST}"
-	echo "$STR (client) ServiceName = $CLIENTNAME --"
-
-  print_info "$STR end -------------------------------------------------|"
-}
-
 add_entries()
 {
   local STR=" -- add_entries - "
@@ -188,7 +119,7 @@ add_entries()
   cat $TMPFILE |
    while read LINE
     do
-	# verify is the service definition already exist before insert it
+	# verify if the service definition already exists before insert it
       local SERVICE=`echo $LINE | awk '{ print $1 }'`;
       if [ ! -z $SERVICE ]
        then
