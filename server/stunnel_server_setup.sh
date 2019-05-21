@@ -22,6 +22,90 @@ get_redhat_version()
   print_info "$STR end -------------------------------------------------|"
 }
 
+add_param()
+{ 
+  local ORIGFILE=$1
+  local ENTRY="$2 $3 $4"
+  local STR=" -- add_param - "
+  local TMPFILE="entry.tmp"
+  echo > $TMPFILE
+
+  cat $ORIGFILE |
+   while read LINE
+   do
+    if [ "$LINE" == "}" ]
+     then
+        echo "$STR echo $ENTRY >> $TMPFILE -"
+        echo $ENTRY >> $TMPFILE
+     fi
+     echo "$STR echo $LINE >> $TMPFILE -"
+     echo $LINE >> $TMPFILE
+   done
+
+  echo "$STR sudo cp $TMPFILE  $ORIGFILE -"
+  sudo cp $TMPFILE  $ORIGFILE
+}
+
+rebind_oscssd()
+{
+  local STR=" -- rebind_oscssd -"
+  local OSCNAME=$1
+  local OSCPORT=$2
+  if [ -z $OSCNAME ] || [ -z $OSCPORT ]
+   then
+        echo "$STR we could not identify one of oscname=[$OSCNAME] OR oscport=[$OSCPORT] -"
+        echo "$STR Skippiong now!... -"
+        exit 3;
+   fi
+
+  local OSCFILE="/etc/xinetd.d/${OSCNAME}"
+  if [ ! -e $OSCFILE ]
+   then
+        echo "$STR The oscFile=[$OSCFILE] does not exist. Skipping now !... -"
+        exit 4;
+   fi
+  
+  local THISHOST=`hostname`;
+  if [ "$THISHOST" == "" ]
+   then
+        echo "$STR Could not identify this host=[$THISHOST]. Skipping now !... -"
+        exit 5;
+   fi
+
+  local IPADDR=`ping -c 1 $THISHOST | grep PING | cut -d\( -f 2 | cut -d\) -f 1`;
+  if [ "$IPADDR" == "" ]
+   then
+        echo "$STR Could not identify the IPv4  address =[$IPADDR]  of this host. SKIP NOW! -"
+        exit 6;
+   fi
+
+  local PARAMETER="  bind = $IPADDR  "
+  add_param $OSCFILE $PARAMETER
+  
+  # restart the xinetd
+  SYSTEMCTL="/usr/bin/systemctl"
+  SERVICE="/sbin/service"
+  XINETD="/etc/init.d/xinetd"
+
+  if [ -e $XINETD ]
+   then
+        echo "$STR sudo $XINETD restart - "
+        sudo $XINETD restart
+  elif [  -e $SERVICE ]
+   then
+        echo "$STR sudo $SERVICE xinetd restart -"
+        sudo $SERVICE xinetd restart
+  elif [  -e $SYSTEMCTL ]
+   then 
+        echo "$STR sudo $SYSTEMCTL restert xinetd -"
+        sudo $SYSTEMCTL restert xinetd
+  else
+        echo "$STR Could not restart the $OSCNAME via xinetd -"
+        echo "$STR [$PARAMETER] binding failed!  -"
+  fi
+
+}
+
 
 get_osc_portnr()
 {
@@ -53,6 +137,14 @@ get_osc_portnr()
   print_info "$STR  Counter=$COUNTER - $NAME is into the list: [$OSC_DPORT] --"
   OSC_PORT=`echo $OSC_DPORT | cut -d/ -f 1`;
   echo "$STR OSC_PORT = [$OSC_PORT] --"
+##############################################################################
+# In case IPv6 is enabled and the stunnel-server is installed on a RHEL-6 system, then the default ip6table version installed ( ip6tables v1.4.7 ) does not support the creation of the ip6table REDIRECT rules. In such a case, the iptable REDIRECTrules are the only option. In this situation the <bind = <IPv4>> parameter ( the <IPv4> is the IPv4 address of this stunnel-server machine ) should be added to the osc* (Versant Service Connector) file, which is normally located in the /etc/xinet.d/ directory. The xinetd must be restarted to listen to new client connections on the socket configured in the /etc/services file ( osc*	<port>/tcp);
+##############################################################################
+  get_redhat_version
+  if [ "RHVERSION" == "6" ]
+   then
+    rebind_oscssd $OSCSSD $OSC_PORT
+  fi 
  print_info "$STR end -------------------------------------------------|"
 }
 
@@ -66,7 +158,9 @@ get_ip_version()
 	print_info "$STR got the foillowing parameters: [$@] "
 	exit 1001
   fi
+
   get_osc_portnr $OSCN
+
   local AUX=`echo lsof -i :$OSC_PORT`;
   echo "$STR sudo $AUX";
   local TYPE=`sudo $AUX | grep -v COMMAND | awk '{ print $5 }' `;
@@ -486,7 +580,9 @@ def_ssl_server_cfg()
   get_redhat_version
   if [ "$RHVERSION"  == "7" ]
    then
-	# stunnel has a bug and we need to setup fips to NO in RHEL-7
+############################################################################
+#  The stunnel version delivered by default in RHEL-7 (stunnel 4.29 on x86_64-redhat-linux-gnu with OpenSSL 1.0.1e-fips) has a bug (REDHAT BUGZILLA #1498051 ; https://bugzilla.redhat.com/show_bug.cgi?id=1490851 ).  To circumvent this problem on RHEL-7, add the “tips = no” parameter to the stunnel config file, in order to be able to start it up in daemon mode. The “fips = no” parameter should be inserted before the stunnel-server/client definition in its config file
+############################################################################
   	echo " fips = no " >> $SRV_CFG_FILE
   fi
   if [ "$DAEMONMODE" != "0" ]
