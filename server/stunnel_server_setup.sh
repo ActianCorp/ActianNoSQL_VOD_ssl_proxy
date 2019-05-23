@@ -477,13 +477,22 @@ set_hosts_allow()
 set_iptable_rule()
 {
   local STR=" -- set_iptable_rule - "
+
+  if [ "$RHVERSION" == "6" ]
+   then 
+	# This should be used to force a RHEL-6 machine to use iptables instead of ip6tables
+	# because the ip6tables version delivered on RHEL-5 does not support the 
+	# -j REDIRECT rule 
+	IPVERSION="4"
+  fi
+
   if [ "$IPVERSION" == "4" ]
    then
-     local COMM1="iptables"
-     local COMM2="ping"
+       local COMM1="iptables"
+       local COMM2="ping"
    else
-     local COMM1="ip6tables"
-     local COMM2="ping6"
+       local COMM1="ip6tables"
+       local COMM2="ping6"
   fi
 
   IPADDRESS=`$COMM2 -c 1 $SSL_SERVER_HOST | grep PING | cut -d\( -f 2 | cut -d\) -f 1`;
