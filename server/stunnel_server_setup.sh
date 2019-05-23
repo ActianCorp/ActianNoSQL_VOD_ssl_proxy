@@ -28,11 +28,23 @@ add_param()
   local ENTRY="$2 $3 $4"
   local STR=" -- add_param - "
   local TMPFILE="entry.tmp"
+  local LEAVE="no"
+
   echo > $TMPFILE
 
   cat $ORIGFILE |
    while read LINE
    do
+    if [ "$LINE" == "" ]
+    then
+        continue
+    fi
+    if [ "$LINE" == "$ENTRY" ]
+    then
+        LEAVE="yes"
+        rm $TMPFILE
+        break
+    fi
     if [ "$LINE" == "}" ]
      then
         echo "$STR echo $ENTRY >> $TMPFILE -"
@@ -42,8 +54,12 @@ add_param()
      echo $LINE >> $TMPFILE
    done
 
-  echo "$STR sudo cp $TMPFILE  $ORIGFILE -"
-  sudo cp $TMPFILE  $ORIGFILE
+  if [ "$LEAVE" == "no" ] && [ -e $TMPFILE ]
+   then
+         echo "$STR sudo cp $TMPFILE  $ORIGFILE -"
+        sudo cp $TMPFILE  $ORIGFILE
+  fi
+
 }
 
 rebind_oscssd()
