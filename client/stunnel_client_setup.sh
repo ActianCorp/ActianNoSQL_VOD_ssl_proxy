@@ -179,6 +179,7 @@ set_iptable_rule()
 
   local MTMP_IPTABLE_CLN_RULE_FILE=$1
   local RULE=`cat $MTMP_IPTABLE_CLN_RULE_FILE`;
+   echo "$STR sudo  $RULE -"
    sudo  $RULE
   print_info "$STR end -------------------------------------------------|"
 }
@@ -196,6 +197,7 @@ start_stunnel_daemon()
       echo "$WRAPPER sudo stunnel $CFG_FILE  --"
       sudo $WRAPPER $CFG_FILE &
       echo "$STR List of stunnel processes running --"
+      sleep 0.6
       ps -ef | grep stunnel
    fi
    print_info "$STR end -------------------------------------------------|"
@@ -211,7 +213,7 @@ function_setup()
 	echo "$MFUNCTION $MFILE"
 	$MFUNCTION $MFILE
       else
-        echo " The $FUNCTION  could not br setup because the $MFILE is empty!"
+        echo " The $FUNCTION  could not setup because the $MFILE is empty!"
         exit 2;
      fi
 }
@@ -219,11 +221,10 @@ function_setup()
 prepare_client()
 {
   local STR=" -- prepare_client - "
-  echo "$STR DAEMONMODE = $DAEMONMODE ;  CLN_CFG_FILE = $CLN_CFG_FILE -"
-  return  10;
 
   if [ "$DAEMONMODE" != "0" ]
    then
+  	echo "$STR DAEMONMODE = $DAEMONMODE ;  CLN_CFG_FILE = $CLN_CFG_FILE -"
 	start_stunnel_daemon $CLN_CFG_FILE
    else
 	echo "$STR starting stunnel by xinetd wasn't implemented! --"
@@ -290,13 +291,19 @@ prepare_client()
 	     VALUE=` grep DAEMONMODE $FILE | awk '{ print $3 }'`;
 	        DAEMONMODE=$VALUE
 
+	if [ ! -d $STUNNELDIR ]
+	 then
+	    echo "$PRSTR sudo mkdir $STUNNELDIR -"
+	    sudo mkdir $STUNNELDIR
+	 fi
+
 	function_setup set_services $AUX/$TMP_SERVICES
 
 	function_setup set_hosts_allow $AUX/$TMP_HOSTS_ALLOW
 
 	function_setup set_iptable_rule $AUX/$TMP_IPTABLE_CLN_RULE_FILE
 
-#	prepare_client 
+	prepare_client 
 
  fi  # end_else [ ! -e $AUX/client_config.txt ]
 
