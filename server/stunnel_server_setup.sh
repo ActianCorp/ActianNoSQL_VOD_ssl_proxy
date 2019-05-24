@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 ##################################################################### 
-#
+# SSL server Wrapper
 # initial version: Apr 2019 - Alberico Perrella Neto
 #####################################################################
 print_info()
@@ -19,7 +19,7 @@ get_redhat_version()
   local STR=" -- get_redhat_version - "
   RHVERSION=`cat /etc/redhat-release  | awk '{ print $7 }' | cut -d. -f 1`;
   print_info "$STR RHEL version=$RHVERSION -- "
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 add_param()
@@ -161,7 +161,7 @@ get_osc_portnr()
    then
     rebind_oscssd $OSCSSD $OSC_PORT
   fi 
- print_info "$STR end -------------------------------------------------|"
+ print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 get_ip_version()
@@ -189,7 +189,7 @@ get_ip_version()
 	IPVERSION=6
   fi
   echo "$STR Parameters:[$@] - number of Parameters: $# - IPv${IPVERSION} --"
- print_info "$STR end -------------------------------------------------|"
+ print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 get_osc_service_def()
@@ -234,7 +234,7 @@ get_osc_service_def()
 	exit 1000
     fi
   fi #### if [-z $OSC_NAME] -- else ####
- print_info "$STR end -------------------------------------------------|"
+ print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 stopIF_hostname_null()
@@ -259,8 +259,10 @@ stopIF_hostname_null()
      local ANSWER="no"
      while [ "${ANSWER:0:1}" != "y" ] 
       do
-	echo -n "$STR Please enter the domain name of this network (example: versant.com): "  
+	echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+	echo -n "$STR Please enter the domain name of this network (example: versant.com):"
 	read DOMAIN
+	echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 	echo -n "$STR Is this domain correct? (yes|no):"
 	read ANSWER
         if [ "${ANSWER:0:1}" == "Y" ]
@@ -272,7 +274,7 @@ stopIF_hostname_null()
   fi
   echo "$STR Full Qualified hostname= $LOCAL_HOST --"
   SSL_SERVER_HOST=$LOCAL_HOST
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 check_socket()
@@ -301,7 +303,7 @@ check_socket()
    fi
   echo "$STR Returning socket flag =[$SOCKET] --"
   echo "$STR In case the socket flag is empty, then the port [$PORT] is available --"
- print_info "$STR end -------------------------------------------------|"
+ print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 search_ssl()
@@ -332,7 +334,7 @@ search_ssl()
  # Returning $RET
  RESULT=$RET
  echo "$STR Result = [$RESULT] --"
- print_info "$STR end -------------------------------------------------|"
+ print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 verify_client_port()
@@ -357,7 +359,7 @@ verify_client_port()
 
    echo "$STR In case CLSOCKET_FLAG is empty, then the port is available in the remote host --"
    echo "$STR Remote Client socket Flag = [$CLSOCKET_FLAG] -- "
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 get_ssl_service_def()
@@ -382,31 +384,37 @@ get_ssl_service_def()
   # if its name and port numbers are available   
 
 	SSL_SERVER_NAME="ssl_srv_${THISHOST}"
+	echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+	echo -n "$STR Enter an additional string to be added to the ServiceName of the SSL wrapper server [$SSL_SERVER_NAME]:"
+	read MYSTR
+	SSL_SERVER_NAME=${SSL_SERVER_NAME}_${MYSTR}
 	echo "$STR (server) ServiceName = $SSL_SERVER_NAME --"
 	search_ssl $SSL_SERVER_NAME $SSLPORT;
 
  # This should be verified later on the client machines
-	SSL_CLIENT_NAME="ssl_cln_${THISHOST}"
+	SSL_CLIENT_NAME="ssl_cln_${THISHOST}_${MYSTR}"
 	echo "$STR (client) ServiceName = $SSL_CLIENT_NAME --"
 
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 check_one_client()
 {
    local STR=" -- check_one_client - "
    print_info "$STR We need to check if the SSL client port you wish to use is available --"
-   echo -n "$STR Enter a client hostname: "
+   echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"		
+   echo -n "$STR Enter a client hostname:"
    read REMOTEHOST
    CLSOCKET_FLAG="xx"
    while [ "$CLSOCKET_FLAG" != "" ]
     do
+      echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"		
       echo -n "$STR Enter the SSL client port you wish to use: "
       read REMOTEPORT
       verify_client_port $REMOTEHOST $REMOTEPORT
     done
    echo  "$STR The client hostname [$REMOTEHOST] is not using the port [$REMOTEPORT] --"
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 self_signed_certificate()
@@ -415,7 +423,7 @@ self_signed_certificate()
   local STR="  -- self_signed_license - "
   CERTNAME="cert_${SSL_SERVER_NAME}.pem"
 
-  if [ -z ${STUNNELDIR}/${CERTNAME} ]
+  if [ ! -e ${STUNNELDIR}/${CERTNAME} ]
    then
      echo "$STR an SSL self signed certificate will be generated --"
      echo "$STR Please enter the information required on the next lines --"
@@ -435,7 +443,7 @@ self_signed_certificate()
       echo "$STR The $CERTNAME file already exists under the $STUNNELDIR directory--"
       echo "$STR Don't need to create a new certificate --"
   fi
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 add_entries()
@@ -473,7 +481,7 @@ add_entries()
         fi # end [ -z $MATCH1 ]
       fi # end  [ ! -z $SERVICE ]
     done
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 set_hosts_allow()
@@ -523,7 +531,7 @@ set_iptable_rule()
   TMP_IPTABLE_CLN_RULE_FILE="./tmp_iptable_${SSL_CLIENT_NAME}.cfg"
   local RULE="$COMM1 -t nat -A OUTPUT -p tcp --dest $IPADDRESS --dport $OSC_PORT -j REDIRECT --to-ports $REMOTEPORT "
   echo "$RULE" > $TMP_IPTABLE_CLN_RULE_FILE
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 set_services()
@@ -543,7 +551,7 @@ set_services()
     # add the osc service entry to the temp file, which
     # would ONLY be user later by the client hosts
         echo "$OSC_NAME  $OSC_PORT/tcp " | tee -a $TMP_SERVICES
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 pack_all_client_config_files()
@@ -582,7 +590,7 @@ pack_all_client_config_files()
 	echo "$STR sudo rm $TMP_CERTFILE -- --"
 	sudo rm $TMP_CERTFILE
    fi 
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 def_ssl_server_cfg()
@@ -634,7 +642,7 @@ def_ssl_server_cfg()
   # save the file to the STUNNELDIR on the server hosts
   echo "$STR sudo cp $SRV_CFG_FILE ${STUNNELDIR}/. --"
   sudo cp $SRV_CFG_FILE ${STUNNELDIR}/.
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 def_ssl_client_cfg()
@@ -678,7 +686,7 @@ def_ssl_client_cfg()
 
   # save the file to the STUNNELDIR on the server hosts
   # later it should be distributed to the client hosts
-  print_info "$STR end -------------------------------------------------|"
+  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 start_stunnel_daemon()
@@ -689,12 +697,13 @@ start_stunnel_daemon()
     then
      echo "$STR stunnel binary could not be found -- "
     else
-      echo "$WRAPPER sudo stunnel $SRV_CFG_FILE  --"
+      echo "$STR $WRAPPER sudo stunnel $SRV_CFG_FILE  --"
       sudo $WRAPPER $SRV_CFG_FILE &
       echo "$STR List of stunnel processes running --"
-      ps -ef | grep stunnel
+      sleep 0.6
+      ps -ef | grep stunnel 
    fi
-   print_info "$STR end -------------------------------------------------|"
+   print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
 ###### main procedure ######
@@ -732,7 +741,8 @@ get_osc_service_def
   RESULT="TRUE"
   while [ "$RESULT" == "TRUE" ]
    do
-     echo -n "$PRSTR Please, enter a valid port number for the SSL server: "
+     echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+     echo -n "$PRSTR Please, enter a valid port number for the SSL server:"
      read SSL_SERVER_PORT
      get_ssl_service_def  $SSL_SERVER_PORT $SSL_SERVER_HOST ;
    done
