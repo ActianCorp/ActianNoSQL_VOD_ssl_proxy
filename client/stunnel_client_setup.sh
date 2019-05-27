@@ -224,6 +224,20 @@ prepare_client()
 
   if [ "$DAEMONMODE" != "0" ]
    then
+	# get sure the directory of the SSL client service log file will be created
+	local OUTPUTF=`grep output  $AUX/$CLN_CFG_FILE | awk '{print $3}'`;
+	local TEST1=`echo $OUTPUTF | grep '/'`;
+	print_info "$STR OUTPUTF=[$OUTPUTF] -"
+	if [ ! -z $TEST1 ]
+	 then
+	  DIRPATH=${OUTPUTF%/*}
+	  print_info "$STR SSL client log Base directory = $DIRPATH "
+	  if [ "$DIRPATH" != "." ] && [ "$DIRPATH" != "" ]
+	   then
+	 	echo "$STR sudo mkdir $DIRPATH -"
+	  	sudo mkdir $DIRPATH
+	  fi
+	 fi
   	echo "$STR DAEMONMODE = $DAEMONMODE ;  CLN_CFG_FILE = $CLN_CFG_FILE -"
 	start_stunnel_daemon $AUX/$CLN_CFG_FILE
 	sudo cp $AUX/$CLN_CFG_FILE $STUNNELDIR/.
