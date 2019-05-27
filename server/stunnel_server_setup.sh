@@ -88,14 +88,17 @@ rebind_oscssd()
         exit 5;
    fi
 
-  local IPADDR=`ping -c 1 $THISHOST | grep PING | cut -d\( -f 2 | cut -d\) -f 1`;
-  if [ "$IPADDR" == "" ]
-   then
-        echo "$STR Could not identify the IPv4  address =[$IPADDR]  of this host. SKIP NOW! -"
-        exit 6;
-   fi
+#  rebind the oscXYZ service to the loopback interface if usimg RHEL6, because the 
+#  ip6tables version there cannot redirect TCP6 packets
+#  local IPADDR=`ping -c 1 $THISHOST | grep PING | cut -d\( -f 2 | cut -d\) -f 1`;
+#  if [ "$IPADDR" == "" ]
+#   then
+#        echo "$STR Could not identify the IPv4  address =[$IPADDR]  of this host. SKIP NOW! -"
+#        exit 6;
+#   fi
 
-  local PARAMETER="  bind = $IPADDR  "
+#  local PARAMETER="  bind = $IPADDR  "
+  local PARAMETER="  bind = 127.0.0.1  "
   add_param $OSCFILE $PARAMETER
   
   # restart the xinetd
