@@ -692,7 +692,7 @@ def_ssl_client_cfg()
 start_stunnel_daemon()
 {
    local STR=" -- start_stunnel_daemon - "
-   local WRAPPER=`which stunnel`
+   local WRAPPER=`sudo which stunnel`
    if [ -z $WRAPPER ]
     then
      echo "$STR stunnel binary could not be found -- "

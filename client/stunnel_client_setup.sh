@@ -189,7 +189,7 @@ start_stunnel_daemon()
    local STR=" -- start_stunnel_daemon - "
    local CFG_FILE=$1
 
-   local WRAPPER=`which stunnel`;
+   local WRAPPER=`sudo which stunnel`;
    if [ -z $WRAPPER ]
     then
      echo "$STR stunnel binary could not be found -- "
@@ -225,7 +225,8 @@ prepare_client()
   if [ "$DAEMONMODE" != "0" ]
    then
   	echo "$STR DAEMONMODE = $DAEMONMODE ;  CLN_CFG_FILE = $CLN_CFG_FILE -"
-	start_stunnel_daemon $CLN_CFG_FILE
+	start_stunnel_daemon $AUX/$CLN_CFG_FILE
+	sudo cp $AUX/$CLN_CFG_FILE $STUNNELDIR/.
    else
 	echo "$STR starting stunnel by xinetd wasn't implemented! --"
   fi
@@ -295,6 +296,12 @@ prepare_client()
 	 then
 	    echo "$PRSTR sudo mkdir $STUNNELDIR -"
 	    sudo mkdir $STUNNELDIR
+	 fi
+
+	if [ ! -z $CERTNAME ]
+	 then
+	   echo "$PRSTR sudo cp $AUX/$CERTNAME $STUNNELDIR/. -"
+	   sudo cp $AUX/$CERTNAME $STUNNELDIR/.
 	 fi
 
 	function_setup set_services $AUX/$TMP_SERVICES
