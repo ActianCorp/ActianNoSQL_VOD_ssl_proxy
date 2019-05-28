@@ -516,9 +516,11 @@ set_iptable_rule()
   if [ "$IPVERSION" == "4" ]
    then
        local COMM1="iptables"
+       local CHAIN="OUTPUT"
        local COMM2="ping"
    else
        local COMM1="ip6tables"
+       local CHAIN="PREROUTING"
        local COMM2="ping6"
   fi
 
@@ -532,7 +534,7 @@ set_iptable_rule()
   fi
 
   TMP_IPTABLE_CLN_RULE_FILE="./tmp_iptable_${SSL_CLIENT_NAME}.cfg"
-  local RULE="$COMM1 -t nat -A OUTPUT -p tcp --dest $IPADDRESS --dport $OSC_PORT -j REDIRECT --to-ports $REMOTEPORT "
+  local RULE="$COMM1 -t nat -A $CHAIN  -p tcp --dest $IPADDRESS --dport $OSC_PORT -j REDIRECT --to-ports $REMOTEPORT "
   echo "$RULE" > $TMP_IPTABLE_CLN_RULE_FILE
   print_info "|------------------- $STR end  -------------------------------------------------|"
 }
