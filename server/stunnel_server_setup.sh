@@ -490,7 +490,7 @@ add_entries()
 set_hosts_allow()
 {
    HOSTS_ALLOW_FILE="/etc/hosts.allow"
-   TMP_HOSTS_ALLOW="./tmp_hosts.allow_$SSL_SERVER_NAME"
+   TMP_HOSTS_ALLOW="tmp_hosts.allow_$SSL_SERVER_NAME"
    echo "" > $TMP_HOSTS_ALLOW
    for SERVN in $SSL_SERVER_NAME $SSL_CLIENT_NAME $OSC_NAME
      do
@@ -543,7 +543,7 @@ set_iptable_rule()
 set_services()
 {  
    SERVICES_FILE="/etc/services" 
-   TMP_SERVICES="./tmp_services_$SSL_SERVER_NAME"
+   TMP_SERVICES="tmp_services_$SSL_SERVER_NAME"
    echo "" > $TMP_SERVICES
     echo "$SSL_SERVER_NAME  $SSL_SERVER_PORT/tcp " | tee -a $TMP_SERVICES
     echo "$SSL_CLIENT_NAME  $REMOTEPORT/tcp " | tee -a $TMP_SERVICES
