@@ -39,7 +39,7 @@ check_socket()
    # Socket could be an IPv4 or IPv6 socket
    if [ "SOCKET" != "" ]
      then
-       # identify the amount of collons (:) and take the last field
+       # identify the amount of colons (:) and take the last field
        local DOTS=`echo $SOCKET | grep -o ':' | wc -l`;
        local NFIELD=`expr $DOTS + 1`;
        local LASTFIELD=`echo $SOCKET | cut -d: -f $NFIELD`;

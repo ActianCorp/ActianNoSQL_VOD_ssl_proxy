@@ -294,7 +294,7 @@ check_socket()
    # Socket could be an IPv4 or IPv6 socket
    if [ "SOCKET" != "" ]
      then
-       # identify the amount of collons (:) and take the last field
+       # identify the amount of colons (:) and take the last field
        local DOTS=`echo $SOCKET | grep -o ':' | wc -l`;
        local NFIELD=`expr $DOTS + 1`;
        local LASTFIELD=`echo $SOCKET | cut -d: -f $NFIELD`;
@@ -508,7 +508,7 @@ set_iptable_rule()
   if [ "$RHVERSION" == "6" ]
    then 
 	# This should be used to force a RHEL-6 machine to use iptables instead of ip6tables
-	# because the ip6tables version delivered on RHEL-5 does not support the 
+	# because the ip6tables version delivered on RHEL-6 does not support the 
 	# -j REDIRECT rule 
 	IPVERSION="4"
   fi
@@ -619,7 +619,7 @@ def_ssl_server_cfg()
   if [ "$RHVERSION"  == "7" ]
    then
 ############################################################################
-#  The stunnel version delivered by default in RHEL-7 (stunnel 4.29 on x86_64-redhat-linux-gnu with OpenSSL 1.0.1e-fips) has a bug (REDHAT BUGZILLA #1498051 ; https://bugzilla.redhat.com/show_bug.cgi?id=1490851 ).  To circumvent this problem on RHEL-7, add the “tips = no” parameter to the stunnel config file, in order to be able to start it up in daemon mode. The “fips = no” parameter should be inserted before the stunnel-server/client definition in its config file
+#  The stunnel version delivered by default in RHEL-7 (stunnel 4.29 on x86_64-redhat-linux-gnu with OpenSSL 1.0.1e-fips) has a bug (REDHAT BUGZILLA #1498051 ; https://bugzilla.redhat.com/show_bug.cgi?id=1490851 ).  To circumvent this problem on RHEL-7, add the “fips = no” parameter to the stunnel config file, in order to be able to start it up in daemon mode. The “fips = no” parameter should be inserted before the stunnel-server/client definition in its config file
 ############################################################################
   	echo " fips = no " >> $SRV_CFG_FILE
   fi
