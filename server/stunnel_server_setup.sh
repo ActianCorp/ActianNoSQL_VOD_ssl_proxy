@@ -517,24 +517,25 @@ set_iptable_rule()
    then
        local COMM1="iptables"
        local CHAIN="OUTPUT"
-       local COMM2="ping"
+#       local COMM2="ping"
    else
        local COMM1="ip6tables"
-       local CHAIN="PREROUTING"
-       local COMM2="ping6"
+       local CHAIN="OUTPUT"
+#       local COMM2="ping6"
   fi
 
-  IPADDRESS=`$COMM2 -c 1 $SSL_SERVER_HOST | grep PING | cut -d\( -f 2 | cut -d\) -f 1`;
-  print_info "$STR IPADDRESS = [$IPADDRESS] -- "
-  if [ -z $IPADDRESS ]
-   then
-        echo "$STR Could not get through ping IPv${IPVERSION} the IP adress of [$SSL_SERVER_HOST] --"
-        echo "$STR Skipping now! -- "
-        exit 1005
-  fi
+#  IPADDRESS=`$COMM2 -c 1 $SSL_SERVER_HOST | grep PING | cut -d\( -f 2 | cut -d\) -f 1`;
+#  print_info "$STR IPADDRESS = [$IPADDRESS] -- "
+#  if [ -z $IPADDRESS ]
+#   then
+#        echo "$STR Could not get through ping IPv${IPVERSION} the IP adress of [$SSL_SERVER_HOST] --"
+#        echo "$STR Skipping now! -- "
+#        exit 1005
+#  fi
 
-  TMP_IPTABLE_CLN_RULE_FILE="./tmp_iptable_${SSL_CLIENT_NAME}.cfg"
-  local RULE="$COMM1 -t nat -A $CHAIN  -p tcp --dest $IPADDRESS --dport $OSC_PORT -j REDIRECT --to-ports $REMOTEPORT "
+  TMP_IPTABLE_CLN_RULE_FILE="tmp_iptable_${SSL_CLIENT_NAME}.cfg"
+  #local RULE="$COMM1 -t nat -A $CHAIN  -p tcp --dest $IPADDRESS --dport $OSC_PORT -j REDIRECT --to-ports $REMOTEPORT "
+  local RULE="$COMM1 -t nat -A $CHAIN  -p tcp --dest $SSL_SERVER_HOST --dport $OSC_PORT -j REDIRECT --to-ports $REMOTEPORT "
   echo "$RULE" > $TMP_IPTABLE_CLN_RULE_FILE
   print_info "|------------------- $STR end  -------------------------------------------------|"
 }
