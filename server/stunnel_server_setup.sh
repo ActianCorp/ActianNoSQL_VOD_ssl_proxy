@@ -116,8 +116,8 @@ rebind_oscssd()
         sudo $SERVICE xinetd restart
   elif [  -e $SYSTEMCTL ]
    then 
-        echo "$STR sudo $SYSTEMCTL restert xinetd -"
-        sudo $SYSTEMCTL restert xinetd
+        echo "$STR sudo $SYSTEMCTL restart xinetd -"
+        sudo $SYSTEMCTL restart xinetd
   else
         echo "$STR Could not restart the $OSCNAME via xinetd -"
         echo "$STR [$PARAMETER] binding failed!  -"
@@ -195,46 +195,77 @@ get_ip_version()
  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
+set_new_list()
+{
+  local STR=" --set_new_list - "
+  local THISLIST=$1
+  for NAME in $THISLIST
+  do
+    local DOTS=`echo $NAME | grep -o '\:' | wc -l`;
+    local NFIELD=`expr $DOTS + 1`;
+    local LASTFIELD=`echo $NAME | cut -d: -f $NFIELD`;
+    print_info "$STR osc* service name = [$LASTFIELD]   --"
+    RETURNLIST="$RETURNLIST $LASTFIELD"
+  done
+  print_info "$STR RETURNLIST = [$RETURNLIST]   --"
+}
 get_osc_service_def()
 {
   local STR=" -- get_osc_service_def - "
-  OSC_ACTIVE_LIST=`netstat -a | grep osc | cut -d: -f 2 | awk '{print $1}'`;
+  # OSC_ACTIVE_LIST=`netstat -a | grep osc | cut -d: -f 2 | awk '{print $1}'`;
+  OSC_ACTIVE_LIST=`netstat -a | grep osc | awk '{print $4}'`;
+###### The above OSC_ACTIVE_LIST looks like these two lists:
+###### list ONE
+# 537 pisa:/disk1/alberico/TEST/ssl_proxy> netstat -a | grep osc | awk '{print $4}'
+# [::]:osc_rico93
+###### list TWO
+# 504 dehh-sup-marsala.versant.com:/home/aperrell> netstat -a | grep osc | awk '{print $4}'
+# localhost:osc_rico93
+# *:osc_rico802up33
+######
+  RETURNLIST=""
+  set_new_list $OSC_ACTIVE_LIST
+  print_info "$STR OSC_ACTIVELIST = [$OSC_ACTIVE_LIST]   --"
+  print_info "$STR RETURNLIST = [$RETURNLIST]   --"
+
   OSC_NAME=`echo $VERSANT_SERVICE_NAME`;
-  if [ -z $OSC_NAME ] 
-   then 	#VERSANT_SERVICE_NAME is not defined
+  if [ -z $OSC_NAME ]
+   then         #VERSANT_SERVICE_NAME is not defined
     # we should verify if the default oscssd is active
-    for OSC in $OSC_ACTIVE_LIST
+    #for OSC in $OSC_ACTIVE_LIST
+    for OSC in $RETURNLIST
      do
-	if [ $OSC == "oscssd" ]
-	 then
-	   OSC_NAME=$OSC
+        if [ $OSC == "oscssd" ]
+         then
+           OSC_NAME=$OSC
            #### The osc service was found  
-  	     get_ip_version $OSC
-	     echo "$STR OSC_NAME=$OSC_NAME - OSC_PORT=$OSC_PORT --"
-	     return 0
-	   ####
+             get_ip_version $OSC
+             echo "$STR OSC_NAME=$OSC_NAME - OSC_PORT=$OSC_PORT --"
+             return 0
+           ####
         fi
      done
     # now we need to double check if VERSANT_SERVICE_NAME matches one of the active osc services
    else
     FLAG_L="FALSE"
-    for OSC in $OSC_ACTIVE_LIST
+    #for OSC in $OSC_ACTIVE_LIST
+    for OSC in $RETURNLIST
      do
         if [ $OSC == $OSC_NAME ]
          then
            FLAG_L="TRUE"
            #### The osc service was found  
-  	     get_ip_version $OSC
-	     echo "$STR OSC_NAME=$OSC_NAME - OSC_PORT=$OSC_PORT --"
-	     return 0
-	   ####
+            get_ip_version $OSC
+             echo "$STR OSC_NAME=$OSC_NAME - OSC_PORT=$OSC_PORT --"
+             return 0
+           ####
         fi
      done
     if [ $FLAG_L == "FALSE" ]
      then
-	echo "$STR The $OSC_NAME is not listenning for connection requests! --"
-	echo "$STR get_osc_service_def - Exiting now!... --"
-	exit 1000
+        echo "$STR The $OSC_NAME is not listenning for connection requests! --"
+        echo "$STR get_osc_service_def - Exiting now!... --"
+        exit 1000
     fi
   fi #### if [-z $OSC_NAME] -- else ####
  print_info "|------------------- $STR end  -------------------------------------------------|"
@@ -737,9 +768,9 @@ echo; echo
  stopIF_hostname_null $SSL_SERVER_HOST
 
  echo "$PRSTR This machine: $SSL_SERVER_HOST will be setup as the stunnel server --"
- echo; echo
+ echo
 
-get_osc_service_def 
+  get_osc_service_def 
   echo "$PRSTR The OSC_NAME=$OSC_NAME is active and listenning to OSC_PORT=$OSC_PORT --"
   echo "$PRSTR The OSC_NAME=$OSC_NAME uses an IPv${IPVERSION} socket --"
 
