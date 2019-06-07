@@ -1,5 +1,9 @@
 #!/bin/bash 
 
+LISTENNING_PORTS="netstat -an | grep LISTEN | grep tcp"
+LISTENNING_SERVICES="netstat -a | grep LISTEN | grep tcp"
+SCKTFILE="clnSocketFlag.txt"
+
 ##################################################################### 
 # SSL server Wrapper
 # initial version: Apr 2019 - Alberico Perrella Neto
@@ -195,9 +199,9 @@ get_ip_version()
  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
-set_new_list()
+get_service_list()
 {
-  local STR=" --set_new_list - "
+  local STR=" --get_service_list - "
   local THISLIST=$1
   for NAME in $THISLIST
   do
@@ -224,7 +228,7 @@ get_osc_service_def()
 # *:osc_rico802up33
 ######
   RETURNLIST=""
-  set_new_list $OSC_ACTIVE_LIST
+  get_service_list $OSC_ACTIVE_LIST
   print_info "$STR OSC_ACTIVELIST = [$OSC_ACTIVE_LIST]   --"
   print_info "$STR RETURNLIST = [$RETURNLIST]   --"
 
@@ -318,25 +322,30 @@ check_socket()
    # this socket
 
    local STR=" -- check_socket - "
-   local SOCKET=$1
-   local PORT=$2
+   local PORT=$1
+   local SOCKET=$2
    
    # we still need to verify if we got the right port number
    # Socket could be an IPv4 or IPv6 socket
    if [ "SOCKET" != "" ]
      then
-       # identify the amount of colons (:) and take the last field
+       # identify the amount of colons (:) and take the last field = Port number
        local DOTS=`echo $SOCKET | grep -o ':' | wc -l`;
        local NFIELD=`expr $DOTS + 1`;
        local LASTFIELD=`echo $SOCKET | cut -d: -f $NFIELD`;
        print_info "$STR This socket uses the Port [$LASTFIELD] -- "
         if [ "$LASTFIELD" != "$PORT" ]
           then
-            SOCKET=""
+            CLSOCKET_FLAG=""
+          else
+            CLSOCKET_FLAG=$LASTFIELD
         fi
+     else       # $SOCKET == ""
+            CLSOCKET_FLAG=""
    fi
-  echo "$STR Returning socket flag =[$SOCKET] --"
-  echo "$STR In case the socket flag is empty, then the port [$PORT] is available --"
+  echo "$STR Returning socket flag =[$CLSOCKET_FLAG] --"
+  echo "$CLSOCKET_FLAG" > $SCKTFILE
+  echo "$STR ONLY in case the socket flag is empty, then the port [$PORT] is available --"
  print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
@@ -349,12 +358,12 @@ search_ssl()
   local AUX0=`grep $SERV  /etc/services  | cut -d/ -f 1 `;
    TEST0=`echo $AUX0 | awk '{ print $1}' `;   # service name
    TEST1=`echo $AUX0 | awk '{ print $2}' `;   # service port
-   #TEST2=`netstat -an | grep  \":$PORT \" | awk '{print $4}' `;
-   TEST2=`netstat -an | awk '{ print $4 }' | grep  :$PORT `;
+   #TEST2=`netstat -an | awk '{ print $4 }' | grep  :$PORT `;
+   TEST2=`$LISTENING_PORTS | awk '{ print $4 }' | grep  :$PORT `;
 
    # still need to verify if we got the right port number
    # TEST2 could be an IPv4 or IPv6 socket
-   check_socket $TEST2 $PORT   
+   check_socket $PORT $TEST2 
    TEST2=$SOCKET
 
  if [ -z $TEST0 ] && [ -z $TEST1 ] && [ -z $TEST2 ]
@@ -376,23 +385,43 @@ verify_client_port()
    local STR=" --verify_client_port - "
    local CLHOST=$1
    local CLPORT=$2
+   local CLFILE=${CLHOST}Test.txt
    # Local <IP:port> is the fourthy field of "netstat -an"
-   local LOCALSOCKET=`print_info "netstat -an | awk '{ print $4 }' | grep :$CLPORT" `;
-    print_info "$STR LOCALSOCKET=[$LOCALSOCKET] --"
-   CLSOCKET_FLAG=`ssh $CLHOST $LOCALSOCKET `;
-   print_info "$STR Complete SSH output = [$CLSOCKET_FLAG] --"
-   CLSOCKET_FLAG=`echo $CLSOCKET_FLAG | awk '{ print $4 }'`;
-   print_info "$STR Client socket = [$CLSOCKET_FLAG] --"
+   #local LOCALSOCKET=`echo "netstat -an | awk '{ print $4 }' | grep :$CLPORT" `;
+   local LOCALSOCKET="$LISTENNING_PORTS | grep :$CLPORT"
+   print_info "$STR LOCALSOCKET=[$LOCALSOCKET] --"
+
+   ssh $CLHOST $LOCALSOCKET > $CLFILE
+   echo "------- Begin $CLFILE ------------"
+   cat $CLFILE
+   echo "------- End $CLFILE ------------"
+
+   > $SCKTFILE
+   local SCKTFLAG="none";
+   cat $CLFILE | while  read LINE  && [ "$SCKTFLAG" != "$CLPORT" ]
+    do
+        print_info "$STR $CLFILE line output = [$LINE] --"
+        local THISCLSOCKET=`echo $LINE | awk '{ print $4 }'`;
+        print_info "$STR Client socket = [$THISCLSOCKET] --"
 
    # still need to verify if we got the right port number
-   # in case the port of CLSOCKET_FLAG does NOT matche the
+   # in case the port of THISCLSOCKET does NOT match the
    # passed CLPORT, then check_socket returns NULL
 
-   check_socket $CLSOCKET_FLAG $CLPORT
-   CLSOCKET_FLAG=$SOCKET
+        # THISCLSOCKET is passed as a socket to the check_socket() function
+        check_socket $CLPORT $THISCLSOCKET
+        SCKTFLAG=` cat $SCKTFILE`;
+        if [ "$SCKTFLAG" == "$CLPORT" ]
+         then
+           echo "$STR Remote Client [$CLHOST] machine is already listenning to connections in Port = [$SCKTFLAG]-- "
+           # returning the port saved into the  $SCKTFILE;
+         fi
+   # if CLSOCKET_FLAG is empty, then the port is available in the remote host
+   # if CLSOCKET_FLAG matches the CLPORT then the port is not available 
 
-   echo "$STR In case CLSOCKET_FLAG is empty, then the port is available in the remote host --"
-   echo "$STR Remote Client socket Flag = [$CLSOCKET_FLAG] -- "
+    done
+   echo "$STR In case SCKTFLAG is empty, then the port is available in the remote host --"
+   echo "$STR Remote Client socket Flag = [$SCKTFLAG] -- "
   print_info "|------------------- $STR end  -------------------------------------------------|"
 }
 
@@ -446,6 +475,8 @@ check_one_client()
       echo -n "$STR Enter the SSL client port you wish to use: "
       read REMOTEPORT
       verify_client_port $REMOTEHOST $REMOTEPORT
+      CLSOCKET_FLAG=`cat $SCKTFILE`;
+      print_info "$STR CLSOCKET_FLAG = [$CLSOCKET_FLAG] -"
     done
    echo  "$STR The client hostname [$REMOTEHOST] is not using the port [$REMOTEPORT] --"
   print_info "|------------------- $STR end  -------------------------------------------------|"
