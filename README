@@ -1,8 +1,8 @@
-#######################################################
-#
-#
-# Initial version - June  2019 - Alberico Perrella Neto
-#######################################################
+###########################################################
+#							  #
+#							  #
+# Initial version - June  2019 - Alberico Perrella Neto   #
+###########################################################
 
 This is an SSL proxy wrapper to encrypt connections between a VOD-9.3 database server and remote client machines. This script works only if the VOD-9.3 server and client machines have the same RHEL version, also:
 server: RHEL6.x <--> RHEL6.x : client
@@ -23,10 +23,17 @@ The main characteristics of the last 2 scripts are:
 
 2- It needs a single port in the server machine to listen and receive encrytped SSL packets sent by clients;
 
-OBS: 
+		---- OBS ---- 
 I- By default Linux Ephemeral port range lies between [32768 - 61000];
+
 II- The Internet Assigned Numbers Authority (IANA) suggests the range 49152 to 65535 (215+214 to 216−1) for dynamic or private ports (BSD);
-III- Try to assign both the server and client ssl wrapper a port number inside the two previous listed ranges.
+
+III- Port ranges defined in RFC-6335 (IANA):
+[0 - 1023]: system ports -> assigned by IANA;
+[1024 - 49151]: user ports (= Registered ports) -> assigned by IANA;
+[49152 - 65535]: private ports (= Dynamic or Ephemeral ports) -> never assigned.
+  
+IV- Try to assign both to the server and client ssl wrapper a port number that is inside the ranges defined in the 3 previous rules..
 
 	==== To be done ====
 
@@ -38,10 +45,13 @@ III- Try to assign both the server and client ssl wrapper a port number inside t
 
 4- Add a mechanism to rotate the stunnel log file;
  
+	==== REFERENCE ====
 
+These scripts were developed based on the "VOD 8 SSH Proxy Configuration for Linux" Knowledge Base article. On this Knowledge Base article it is discussed how to use stunnel as an SSL proxy using several VOD-8.0 server machines. The solution using VOD-8.0 is more complicated than using VOD-9.<x>, because in VOD-8.0 the client machine needs one iptable rule for each database in a remote database server machine. In VOD-9.<x> instead the client needs only one iptable rule for each remote database server machine (regardless of how many databases are located into the remote database server machine).
 
+The previous mentioned KB (Knowledge Base article) can be found into the Salesforce Ticket's management system under the "Actian NoSQL" product.
 
-
+The scripts proposed in this solution can be found in our BitBucket repository (https://alm.actian.com/bitbucket/users/aperrell/repos/ssl_proxy/browse).
 
 	==== Additional notes ====
 
